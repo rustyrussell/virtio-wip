@@ -1819,6 +1819,9 @@ device except where noted.
 
   VIRTIO_BLK_F_FLUSH (9) Cache flush command support.
 
+  VIRTIO_BLK_F_TOPOLOGY (10) Device exports information on optimal I/O
+    alignment.
+
   Device configuration layout The capacity of the device
   (expressed in 512-byte sectors) is always present. The
   availability of the others all depend on various feature bits
@@ -1834,6 +1837,12 @@ device except where noted.
 			u8 sectors;
 		} geometry;
 		u32 blk_size;
+		struct virtio_blk_topology {
+			u8 physical_block_exp;
+			u8 alignment_offset;
+			u16 min_io_size;
+			u32 opt_io_size;
+		} topology;
 	};
 
 2.4.2.3.1 Legacy Interface: Feature bits
@@ -1851,12 +1860,17 @@ device except where noted.
 
 2. If the VIRTIO_BLK_F_BLK_SIZE feature is negotiated, the
   blk_size field can be read to determine the optimal sector size
-  for the driver to use. This does not effect the units used in
+  for the driver to use. This does not affect the units used in
   the protocol (always 512 bytes), but awareness of the correct
-  value can effect performance.
+  value can affect performance.
 
 3. If the VIRTIO_BLK_F_RO feature is set by the device, any write
   requests will fail.
+
+4. If the VIRTIO_BLK_F_TOPOLOGY feature is negotiated, the fields in the
+  topology struct can be read to determine the physical block size and optimal
+  I/O lengths for the driver to use. This also does not affect the units
+  in the protocol, only performance.
 
 2.4.2.5. Device Operation
 ------------------------
