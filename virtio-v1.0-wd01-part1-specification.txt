@@ -274,9 +274,9 @@ Some devices benefit by concurrently dispatching a large number
 of large requests. The VIRTIO_RING_F_INDIRECT_DESC feature can be 
 used to allow this (see FIXME: Reserved Feature Bits). To increase 
 ring capacity it is possible to store a table of indirect 
-descriptors anywhere in memory, and insert a descriptor in main 
-virtqueue (with flags&VRING_DESC_F_INDIRECT on) that refers to memory buffer 
-containing this indirect descriptor table; fields addr and len 
+descriptors anywhere in memory, and insert a descriptor in 
+virtqueue descriptor table with the VRING_DESC_F_INDIRECT flag set that refers 
+those descriptors; fields addr and len 
 refer to the indirect table address and length in bytes, 
 respectively. The indirect table layout structure looks like this 
 (len is the length of the descriptor that refers to this table, 
@@ -290,10 +290,9 @@ which is a variable, so this code won't compile):
 The first indirect descriptor is located at start of the indirect 
 descriptor table (index 0), additional indirect descriptors are 
 chained by next field. An indirect descriptor without next field 
-(with flags&VRING_DESC_F_NEXT off) signals the end of the indirect descriptor 
-table, and transfers control back to the main virtqueue. An 
-indirect descriptor can not refer to another indirect descriptor 
-table (flags&VRING_DESC_F_INDIRECT must be off). A single indirect descriptor 
+(ie. without the VRING_DESC_F_NEXT flag set) signals the end of the descriptor 
+chain. An indirect descriptor with the VRING_DESC_F_INDIRECT flag set
+refers to the next set of indirect descriptors. A single indirect descriptor 
 table can include both read-only and write-only descriptors; 
 write-only flag (flags&VRING_DESC_F_WRITE) in the descriptor that refers to it 
 is ignored.
