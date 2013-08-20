@@ -1069,6 +1069,8 @@ Discovering what devices are available and their type is bus-dependent.
 | Device ID  |   Virtio Device    |
 +------------+--------------------+
 +------------+--------------------+
+| 0          |   none (ignore)    |
++------------+--------------------+
 | 1          |   network card     |
 +------------+--------------------+
 | 2          |   block device     |
@@ -1093,6 +1095,8 @@ Discovering what devices are available and their type is bus-dependent.
 +------------+--------------------+
 | 12         |   virtio CAIF      |
 +------------+--------------------+
+
+When a device is discovered with a device ID of 0, it should be ignored.
 
 2.5.1 Network Device
 ====================
