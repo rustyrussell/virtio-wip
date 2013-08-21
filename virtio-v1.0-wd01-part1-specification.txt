@@ -1539,10 +1539,15 @@ device except where noted.
 
   VIRTIO_BLK_F_SCSI (7) Device supports scsi packet commands.
 
-  VIRTIO_BLK_F_FLUSH (9) Cache flush command support.
+  VIRTIO_BLK_F_WCE (9) Device cache starts in writeback mode after reset.
+    Guests should not negotiate this feature unless they are capable of sending
+    VIRTIO_BLK_T_FLUSH commands.
 
   VIRTIO_BLK_F_TOPOLOGY (10) Device exports information on optimal I/O
     alignment.
+
+  VIRTIO_BLK_F_CONFIG_WCE (11) Device can toggle its cache between writeback
+    and writethrough modes.
 
   Device configuration layout The capacity of the device 
   (expressed in 512-byte sectors) is always present. The 
@@ -1565,6 +1570,7 @@ device except where noted.
 			u16 min_io_size;
 			u32 opt_io_size;
 		} topology;
+		u8 writeback;
 	};
 
 2.5.2.4 Device Initialization
@@ -1587,6 +1593,14 @@ device except where noted.
   topology struct can be read to determine the physical block size and optimal
   I/O lengths for the driver to use. This also does not affect the units
   in the protocol, only performance.
+
+5. The cache mode should be read from the writeback field of the configuration
+  if the VIRTIO_BLK_F_CONFIG_WCE feature if available; the driver can also
+  write to the field in order to toggle the cache between writethrough (0)
+  and writeback (1) mode.
+  If the feature is not available, the driver can instead look at the result
+  of negotiating VIRTIO_BLK_F_WCE: the cache will be in writeback mode after
+  reset if and only if VIRTIO_BLK_F_WCE is negotiated[30]
 
 2.5.2.5 Device Operation
 ------------------------
@@ -2885,3 +2899,6 @@ when a port is closed or hot-unplugged.
 
 [29] As updates to configuration space are not atomic, this field
 isn't particularly reliable, but can be used to diagnose buggy guests.
+
+[30] Until version 1.1, QEMU remained in writeback mode even after a guest announced
+ lack of support for VIRTIO_BLK_F_FLUSH.
