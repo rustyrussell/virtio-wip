@@ -327,7 +327,7 @@ Some devices benefit by concurrently dispatching a large number
 of large requests. The VIRTIO_RING_F_INDIRECT_DESC feature can be
 used to allow this (see "2.6. Reserved Feature Bits"). To increase
 ring capacity it is possible to store a table of indirect
-descriptors anywhere in memory, and insert a descriptor in main
+descriptors anywhere in memory, and insert a single descriptor in main
 virtqueue (with flags&VRING_DESC_F_INDIRECT on) that refers to memory buffer
 containing this indirect descriptor table; fields addr and len
 refer to the indirect table address and length in bytes,
@@ -343,13 +343,25 @@ which is a variable, so this code won't compile):
 The first indirect descriptor is located at start of the indirect
 descriptor table (index 0), additional indirect descriptors are
 chained by next field. An indirect descriptor without next field
-(with flags&VRING_DESC_F_NEXT off) signals the end of the indirect descriptor
-table, and transfers control back to the main virtqueue. An
+(with flags&VRING_DESC_F_NEXT off) signals the end of the descriptor.
+An
 indirect descriptor can not refer to another indirect descriptor
 table (flags&VRING_DESC_F_INDIRECT must be off). A single indirect descriptor
 table can include both read-only and write-only descriptors;
 write-only flag (flags&VRING_DESC_F_WRITE) in the descriptor that refers to it
 is ignored.
+
+2.1.4.3.1.1. Legacy Interface: Indirect Descriptors
+------------------------------
+The spec previously allowed any descriptor in the top-level descriptor
+table to have the VRING_DESC_F_INDIRECT flag set: after the end of
+that indirect table, the next descriptor in the top level would be
+consulted (if any).
+
+This allowed a combination of direct and indirect descriptors, or
+multiple indirect descriptors to be used in a single descriptor chain.
+However, no known driver created such descriptors, so this ability has
+been dropped from the spec for simplicity.
 
 2.1.4.4. The Virtqueue Available Ring
 ------------------------------------
