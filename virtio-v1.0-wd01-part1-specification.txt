@@ -351,8 +351,8 @@ which is a variable, so this code won't compile):
 The first indirect descriptor is located at start of the indirect
 descriptor table (index 0), additional indirect descriptors are
 chained by next field. An indirect descriptor without next field
-(with flags&VRING_DESC_F_NEXT off) signals the end of the indirect descriptor
-table, and transfers control back to the main virtqueue. An
+(with flags&VRING_DESC_F_NEXT off) signals the end of the descriptor.
+An
 indirect descriptor can not refer to another indirect descriptor
 table (flags&VRING_DESC_F_INDIRECT must be off). A single indirect descriptor
 table can include both read-only and write-only descriptors;
@@ -1200,9 +1200,6 @@ features.
 
   VIRTIO_NET_F_MAC (5) Device has given MAC address.
 
-  VIRTIO_NET_F_GSO (6) (Deprecated) device handles packets with
-    any GSO type.[11]
-
   VIRTIO_NET_F_GUEST_TSO4 (7) Guest can receive TSOv4.
 
   VIRTIO_NET_F_GUEST_TSO6 (8) Guest can receive TSOv6.
@@ -1248,6 +1245,15 @@ features.
 		u16 status;
 	};
 
+2.4.1.3.1. Legacy Interface: Feature bits
+--------------------
+VIRTIO_NET_F_GSO (6) Device handles packets with any GSO type.
+
+This was supposed to indicate segmentation offload support, but
+upon further investigation it became clear that multiple bits
+were required.
+
+
 2.4.1.4. Device Initialization
 -----------------------------
 
@@ -1275,16 +1281,16 @@ features.
   packets by negotating the VIRTIO_NET_F_CSUM feature. This “
   checksum offload” is a common feature on modern network cards.
 
-7. If that feature is negotiated[12], a driver can use TCP or UDP
+7. If that feature is negotiated[11], a driver can use TCP or UDP
   segmentation offload by negotiating the VIRTIO_NET_F_HOST_TSO4 (IPv4
   TCP), VIRTIO_NET_F_HOST_TSO6 (IPv6 TCP) and VIRTIO_NET_F_HOST_UFO
   (UDP fragmentation) features. It should not send TCP packets
   requiring segmentation offload which have the Explicit Congestion
   Notification bit set, unless the VIRTIO_NET_F_HOST_ECN feature is
-  negotiated.[13]
+  negotiated.[12]
 
 8. The converse features are also available: a driver can save
-  the virtual device some work by negotiating these features.[14]
+  the virtual device some work by negotiating these features.[13]
    The VIRTIO_NET_F_GUEST_CSUM feature indicates that partially
   checksummed packets can be received, and if it can do that then
   the VIRTIO_NET_F_GUEST_TSO4, VIRTIO_NET_F_GUEST_TSO6,
@@ -1336,7 +1342,7 @@ the different features the driver negotiated.
     and
 
   • csum_offset indicates how many bytes after the csum_start the
-    new (16 bit ones' complement) checksum should be placed.[15]
+    new (16 bit ones' complement) checksum should be placed.[14]
 
 2. If the driver negotiated
   VIRTIO_NET_F_HOST_TSO4, TSO6 or UFO, and the packet requires
@@ -1349,21 +1355,21 @@ the different features the driver negotiated.
 
   • hdr_len is a hint to the device as to how much of the header
     needs to be kept to copy into each packet, usually set to the
-    length of the headers, including the transport header.[16]
+    length of the headers, including the transport header.[15]
 
   • gso_size is the maximum size of each packet beyond that
     header (ie. MSS).
 
   • If the driver negotiated the VIRTIO_NET_F_HOST_ECN feature,
     the VIRTIO_NET_HDR_GSO_ECN bit may be set in “gso_type” as
-    well, indicating that the TCP packet has the ECN bit set.[17]
+    well, indicating that the TCP packet has the ECN bit set.[16]
 
 3. If the driver negotiated the VIRTIO_NET_F_MRG_RXBUF feature,
   the num_buffers field is set to zero.
 
 4. The header and packet are added as one output buffer to the
   transmitq, and the device is notified of the new entry (see "2.4.1.4.
-  Notifying The Device").[18]
+  Notifying The Device").[17]
 
 2.4.1.5.1.1. Packet Transmission Interrupt
 -----------------------------------------
@@ -1388,7 +1394,7 @@ VIRTIO_NET_F_GUEST_UFO features are used, the Guest will need to
 accept packets of up to 65550 bytes long (the maximum size of a
 TCP or UDP packet, plus the 14 byte ethernet header), otherwise
 1514. bytes. So unless VIRTIO_NET_F_MRG_RXBUF is negotiated, every
-buffer in the receive queue needs to be at least this length [19]
+buffer in the receive queue needs to be at least this length [18]
 
 If VIRTIO_NET_F_MRG_RXBUF is negotiated, each buffer must be at
 least the size of the struct virtio_net_hdr.
@@ -1488,7 +1494,7 @@ off. The command-specific-data is one byte containing 0 (off) or
 	 #define VIRTIO_NET_CTRL_MAC_TABLE_SET        0
 
 The device can filter incoming packets by any number of destination
-MAC addresses.[20] This table is set using the class
+MAC addresses.[19] This table is set using the class
 VIRTIO_NET_CTRL_MAC and the command VIRTIO_NET_CTRL_MAC_TABLE_SET. The
 command-specific-data is two variable length tables of 6-byte MAC
 addresses. The first table contains unicast addresses, and the second
@@ -1660,7 +1666,7 @@ the device (not necessarily in order). Each request is of form:
 
 The type of the request is either a read (VIRTIO_BLK_T_IN), a write
 (VIRTIO_BLK_T_OUT), or a flush (VIRTIO_BLK_T_FLUSH or
-VIRTIO_BLK_T_FLUSH_OUT[21]). If the device has VIRTIO_BLK_F_BARRIER
+VIRTIO_BLK_T_FLUSH_OUT[20]). If the device has VIRTIO_BLK_F_BARRIER
 feature the high bit (VIRTIO_BLK_T_BARRIER) indicates that this
 request acts as a barrier and that all preceeding requests must be
 complete before this one, and all following requests must not be
@@ -1834,7 +1840,7 @@ data and outgoing characters are placed in the transmit queue.
 ------------------------
 
 1. For output, a buffer containing the characters is placed in
-  the port's transmitq.[22]
+  the port's transmitq.[21]
 
 2. When a buffer is used in the receiveq (signalled by an
   interrupt), the contents is the input to the port associated
@@ -1978,7 +1984,7 @@ configuration change interrupt.
 2. To supply memory to the balloon (aka. inflate):
 
   (a) The driver constructs an array of addresses of unused memory
-    pages. These addresses are divided by 4096[23] and the descriptor
+    pages. These addresses are divided by 4096[22] and the descriptor
     describing the resulting 32-bit array is added to the inflateq.
 
 3. To remove memory from the balloon (aka. deflate):
@@ -1993,11 +1999,11 @@ configuration change interrupt.
 
   (c) Otherwise, the guest may begin to re-use pages previously
     given to the balloon before the device has acknowledged their
-    withdrawl. [24]
+    withdrawl. [23]
 
 4. In either case, once the device has completed the inflation or
   deflation, the “actual” field of the configuration should be
-  updated to reflect the new number of pages in the balloon.[25]
+  updated to reflect the new number of pages in the balloon.[24]
 
 2.4.5.6.1. Memory Statistics
 ---------------------------
@@ -2907,25 +2913,20 @@ of this expected condition is necessary.
 [10] Even if it does mean documenting design or implementation
 mistakes!
 
-
-[11] It was supposed to indicate segmentation offload support, but
-upon further investigation it became clear that multiple bits
-were required.
-
-[12] ie. VIRTIO_NET_F_HOST_TSO* and VIRTIO_NET_F_HOST_UFO are
+[11] ie. VIRTIO_NET_F_HOST_TSO* and VIRTIO_NET_F_HOST_UFO are
 dependent on VIRTIO_NET_F_CSUM; a dvice which offers the offload
 features must offer the checksum feature, and a driver which
 accepts the offload features must accept the checksum feature.
 Similar logic applies to the VIRTIO_NET_F_GUEST_TSO4 features
 depending on VIRTIO_NET_F_GUEST_CSUM.
 
-[13] This is a common restriction in real, older network cards.
+[12] This is a common restriction in real, older network cards.
 
-[14] For example, a network packet transported between two guests on
+[13] For example, a network packet transported between two guests on
 the same system may not require checksumming at all, nor segmentation,
 if both guests are amenable.
 
-[15] For example, consider a partially checksummed TCP (IPv4) packet.
+[14] For example, consider a partially checksummed TCP (IPv4) packet.
 It will have a 14 byte ethernet header and 20 byte IP header
 followed by the TCP header (with the TCP checksum field 16 bytes
 into that header). csum_start will be 14+20 = 34 (the TCP
@@ -2935,26 +2936,26 @@ of the TCP pseudo header, so that replacing it by the ones'
 complement checksum of the TCP header and body will give the
 correct result.
 
-[16] Due to various bugs in implementations, this field is not useful
+[15] Due to various bugs in implementations, this field is not useful
 as a guarantee of the transport header size.
 
-[17] This case is not handled by some older hardware, so is called out
+[16] This case is not handled by some older hardware, so is called out
 specifically in the protocol.
 
-[18] Note that the header will be two bytes longer for the
+[17] Note that the header will be two bytes longer for the
 VIRTIO_NET_F_MRG_RXBUF case.
 
-[19] Obviously each one can be split across multiple descriptor
+[18] Obviously each one can be split across multiple descriptor
 elements.
 
-[20] Since there are no guarentees, it can use a hash filter or
+[19] Since there are no guarentees, it can use a hash filter or
 silently switch to allmulti or promiscuous mode if it is given too
 many addresses.
 
-[21] The FLUSH and FLUSH_OUT types are equivalent, the device does not
+[20] The FLUSH and FLUSH_OUT types are equivalent, the device does not
 distinguish between them
 
-[22] Because this is high importance and low bandwidth, the current
+[21] Because this is high importance and low bandwidth, the current
 Linux implementation polls for the buffer to be used, rather than
 waiting for an interrupt, simplifying the implementation
 significantly. However, for generic serial ports with the
@@ -2962,9 +2963,9 @@ O_NONBLOCK flag set, the polling limitation is relaxed and the
 consumed buffers are freed upon the next write or poll call or
 when a port is closed or hot-unplugged.
 
-[23] This is historical, and independent of the guest page size
+[22] This is historical, and independent of the guest page size
 
-[24] In this case, deflation advice is merely a courtesy
+[23] In this case, deflation advice is merely a courtesy
 
-[25] As updates to configuration space are not atomic, this field
+[24] As updates to configuration space are not atomic, this field
 isn't particularly reliable, but can be used to diagnose buggy guests.
