@@ -1363,9 +1363,7 @@ the different features the driver negotiated.
 Often a driver will suppress transmission interrupts using the
 VRING_AVAIL_F_NO_INTERRUPT flag (see "2.4.2. Receiving Used Buffers From
 The Device") and check for used packets in the transmit path of following
-packets. However, it will still receive interrupts if the
-VIRTIO_F_NOTIFY_ON_EMPTY feature is negotiated, indicating that
-the transmission queue is completely emptied.
+packets.
 
 The normal behavior in this interrupt handler is to retrieve and
 new descriptors from the used ring and free the corresponding
@@ -2570,18 +2568,7 @@ contents of the event field. The following events are defined:
 2.5. Reserved Feature Bits
 =========================
 
-Currently there are five device-independent feature bits defined:
-
-  VIRTIO_F_NOTIFY_ON_EMPTY (24) Negotiating this feature
-  indicates that the driver wants an interrupt if the device runs
-  out of available descriptors on a virtqueue, even though
-  interrupts are suppressed using the VRING_AVAIL_F_NO_INTERRUPT
-  flag or the used_event field. An example of this is the
-  networking driver: it doesn't need to know every time a packet
-  is transmitted, but it does need to free the transmitted
-  packets a finite time after they are transmitted. It can avoid
-  using a timer if the device interrupts it when all the packets
-  are transmitted.
+Currently there are four device-independent feature bits defined:
 
   VIRTIO_F_ANY_LAYOUT (27) This feature indicates that the device accepts arbitrary
   descriptor layouts, as described in Section "2.1.4.2. Message Framing".
@@ -2608,6 +2595,22 @@ Currently there are five device-independent feature bits defined:
 In addition, bit 30 is used by qemu's implementation to check for experimental
 early versions of virtio which did not perform correct feature negotiation,
 and should not be used.
+
+2.5.1 Legacy Interface: Reserved Feature Bits
+--------------------------------------------
+
+Legacy or transitional devices may offer the following:
+
+VIRTIO_F_NOTIFY_ON_EMPTY (24) Negotiating this feature
+  indicates that the driver wants an interrupt if the device runs
+  out of available descriptors on a virtqueue, even though
+  interrupts are suppressed using the VRING_AVAIL_F_NO_INTERRUPT
+  flag or the used_event field. An example of this is the
+  networking driver: it doesn't need to know every time a packet
+  is transmitted, but it does need to free the transmitted
+  packets a finite time after they are transmitted. It can avoid
+  using a timer if the device interrupts it when all the packets
+  are transmitted.
 
 2.6. virtio_ring.h
 =================
