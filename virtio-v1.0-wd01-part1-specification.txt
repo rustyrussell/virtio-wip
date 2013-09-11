@@ -1107,7 +1107,7 @@ interrupt is handled, the driver must acknowledge it by writing
 a bit mask corresponding to the serviced interrupt to the
 InterruptACK register.
 
-2.3.2.4.4. Notification of Device Configuration Changes
+2.3.2.3.4. Notification of Device Configuration Changes
 ------------------------------------------------------
 
 This is indicated by bit 1 in the InterruptStatus register, as
@@ -1387,7 +1387,7 @@ buffer in the receive queue needs to be at least this length [20]
 If VIRTIO_NET_F_MRG_RXBUF is negotiated, each buffer must be at
 least the size of the struct virtio_net_hdr.
 
-2.4.1.5.2.1. Packet Receive Interrupt
+2.4.1.5.1.2. Packet Receive Interrupt
 ------------------------------------
 
 When a packet is copied into a buffer in the receiveq, the
@@ -1422,7 +1422,7 @@ Processing packet involves:
   VIRTIO_NET_HDR_GSO_NONE, and the “gso_size” field indicates the
   desired MSS (see Packet Transmission point 2).
 
-2.4.1.5.3. Control Virtqueue
+2.4.1.5.2. Control Virtqueue
 ---------------------------
 
 The driver uses the control virtqueue (if VIRTIO_NET_F_VTRL_VQ is
@@ -1488,7 +1488,7 @@ command-specific-data is two variable length tables of 6-byte MAC
 addresses. The first table contains unicast addresses, and the second
 contains multicast addresses.
 
-2.4.1.5.3.3. VLAN Filtering
+2.4.1.5.2.3. VLAN Filtering
 --------------------------
 
 If the driver negotiates the VIRTION_NET_F_CTRL_VLAN feature, it
@@ -1501,7 +1501,7 @@ can control a VLAN filter table in the device.
 Both the VIRTIO_NET_CTRL_VLAN_ADD and VIRTIO_NET_CTRL_VLAN_DEL
 command take a 16-bit VLAN id as the command-specific-data.
 
-2.4.1.5.3.4. Gratuitous Packet Sending
+2.4.1.5.2.4. Gratuitous Packet Sending
 -------------------------------------
 
 If the driver negotiates the VIRTIO_NET_F_GUEST_ANNOUNCE (depends
@@ -1531,13 +1531,13 @@ Processing this notification involves:
 2. Sending VIRTIO_NET_CTRL_ANNOUNCE_ACK command through control
   vq.
 
-2.4.1.5.3.5. Offloads State Configuration
+2.4.1.5.2.5. Offloads State Configuration
 -------------------------------------
 
 If the VIRTIO_NET_F_CTRL_GUEST_OFFLOADS feature is negotiated, the driver can
 send control commands for dynamic offloads state configuration.
 
-2.4.1.5.4.3.1. Setting Offloads State
+2.4.1.5.2.5.1. Setting Offloads State
 -------------------------------------
 
 	u64 offloads;
@@ -1620,7 +1620,7 @@ device except where noted.
 		u32 blk_size;
 	};
 
-2.4.2.3. Device Initialization
+2.4.2.4. Device Initialization
 -----------------------------
 
 1. The device size should be read from the “capacity”
