@@ -1656,7 +1656,7 @@ the device (not necessarily in order). Each request is of form:
 
 	struct virtio_blk_req {
 		u32 type;
-		u32 ioprio;
+		u32 reserved;
 		u64 sector;
 		char data[][512];
 		u8 status;
@@ -1667,7 +1667,7 @@ scsi packet command requests, each of these requests is of form:
 
 	struct virtio_scsi_pc_req {
 		u32 type;
-		u32 ioprio;
+		u32 reserved;
 		u64 sector;
 		char cmd[];
 		char data[][512];
@@ -1699,10 +1699,6 @@ flush the host cache.
 	#define VIRTIO_BLK_T_FLUSH        4
 	#define VIRTIO_BLK_T_FLUSH_OUT    5
 	#define VIRTIO_BLK_T_BARRIER	 0x80000000
-
-The ioprio field is a hint about the relative priorities of
-requests to the device: higher numbers indicate more important
-requests.
 
 The sector number indicates the offset (multiplied by 512) where
 the read or write is to occur. This field is unused and set to 0
@@ -1750,6 +1746,11 @@ data_len, sense_len and residual in a single write-only buffer;
 and the status field is a separate read-only buffer of size 1
 byte, by itself.
 
+2.4.2.5.1 Legacy Interface: Device Operation
+------------------------
+The 'reserved' field was previously called ioprio.  The ioprio field
+is a hint about the relative priorities of requests to the device:
+higher numbers indicate more important requests.
 
 2.4.3. Console Device
 ====================
