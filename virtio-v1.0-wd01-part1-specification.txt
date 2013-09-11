@@ -1911,17 +1911,28 @@ guest memory statistics to the host.
 
 2.4.5.2. Virtqueues
 ------------------
+  0:inflateq. 1:statsq.
+
+  Virtqueue 1 only exists if VIRTIO_BALLON_F_STATS_VQ set.
+
+2.4.5.2.1 Legacy Interface: Virtqueues
+------------------
+Legacy devices have a deflation queue as well:
+
   0:inflateq. 1:deflateq. 2:statsq.
 
   Virtqueue 2 only exists if VIRTIO_BALLON_F_STATS_VQ set.
 
 2.4.5.3. Feature bits
 --------------------
+  VIRTIO_BALLOON_F_STATS_VQ (1) A virtqueue for reporting guest
+    memory statistics is present.
+
+2.4.5.3.1. Legacy Interface: Feature bits
+--------------------
   VIRTIO_BALLOON_F_MUST_TELL_HOST (0) Host must be told before
     pages from the balloon are used.
 
-  VIRTIO_BALLOON_F_STATS_VQ (1) A virtqueue for reporting guest
-    memory statistics is present.
 
 2.4.5.4. Device configuration layout
 -----------------------------------
@@ -1966,7 +1977,18 @@ configuration change interrupt.
     pages. These addresses are divided by 4096[25] and the descriptor
     describing the resulting 32-bit array is added to the inflateq.
 
-3. To remove memory from the balloon (aka. deflate):
+3. To remove memory from the balloon (aka. deflate), the guest may
+   simply access pages previously given to the balloon.
+
+4. After inflation or deflation, the “actual” field of the
+   configuration should be updated to reflect the new number of pages
+   in the balloon.[24]
+
+2.4.5.6.1. Legacy Interface: Device Operation
+------------------------
+
+For legacy devices, the device expects explicit notification of memory
+pages removed from the balloon.
 
   (a) The driver constructs an array of addresses of memory pages
     it has previously given to the balloon, as described above.
@@ -1978,11 +2000,7 @@ configuration change interrupt.
 
   (c) Otherwise, the guest may begin to re-use pages previously
     given to the balloon before the device has acknowledged their
-    withdrawl. [26]
-
-4. In either case, once the device has completed the inflation or
-  deflation, the “actual” field of the configuration should be
-  updated to reflect the new number of pages in the balloon.[27]
+    withdrawl. In this case, deflation advice is merely a courtesy.
 
 2.4.5.6.1. Memory Statistics
 ---------------------------
@@ -2951,8 +2969,6 @@ consumed buffers are freed upon the next write or poll call or
 when a port is closed or hot-unplugged.
 
 [25] This is historical, and independent of the guest page size
-
-[26] In this case, deflation advice is merely a courtesy
 
 [27] As updates to configuration space are not atomic, this field
 isn't particularly reliable, but can be used to diagnose buggy guests.
