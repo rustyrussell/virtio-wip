@@ -1584,8 +1584,6 @@ device except where noted.
 2.4.2.3. Feature bits
 --------------------
 
-  VIRTIO_BLK_F_BARRIER (0) Host supports request barriers.
-
   VIRTIO_BLK_F_SIZE_MAX (1) Maximum size of any single segment is
     in “size_max”.
 
@@ -1619,6 +1617,10 @@ device except where noted.
 		} geometry;
 		u32 blk_size;
 	};
+
+2.4.2.3.1. Legacy Ingterface: Feature bits
+--------------------
+  VIRTIO_BLK_F_BARRIER (0) Host supports request barriers.
 
 2.4.2.4. Device Initialization
 -----------------------------
@@ -1671,14 +1673,7 @@ scsi packet command requests, each of these requests is of form:
 The type of the request is either a read (VIRTIO_BLK_T_IN), a write
 (VIRTIO_BLK_T_OUT), a scsi packet command (VIRTIO_BLK_T_SCSI_CMD or
 VIRTIO_BLK_T_SCSI_CMD_OUT[22]) or a flush (VIRTIO_BLK_T_FLUSH or
-VIRTIO_BLK_T_FLUSH_OUT[23]). If the device has VIRTIO_BLK_F_BARRIER
-feature the high bit (VIRTIO_BLK_T_BARRIER) indicates that this
-request acts as a barrier and that all preceeding requests must be
-complete before this one, and all following requests must not be
-started until this is complete. Note that a barrier does not flush
-caches in the underlying backend device in host, and thus does not
-serve as data consistency guarantee. Driver must use FLUSH request to
-flush the host cache.
+VIRTIO_BLK_T_FLUSH_OUT[23]).
 
 	#define VIRTIO_BLK_T_IN           0
 	#define VIRTIO_BLK_T_OUT          1
@@ -1686,7 +1681,6 @@ flush the host cache.
 	#define VIRTIO_BLK_T_SCSI_CMD_OUT 3
 	#define VIRTIO_BLK_T_FLUSH        4
 	#define VIRTIO_BLK_T_FLUSH_OUT    5
-	#define VIRTIO_BLK_T_BARRIER	 0x80000000
 
 The ioprio field is a hint about the relative priorities of
 requests to the device: higher numbers indicate more important
@@ -1737,6 +1731,19 @@ write-only buffer of size 96 bytes, by itself; the fields errors,
 data_len, sense_len and residual in a single write-only buffer;
 and the status field is a separate read-only buffer of size 1
 byte, by itself.
+
+2.4.2.5.1. Legacy Interface: Device Operation
+------------------------
+	#define VIRTIO_BLK_T_BARRIER	 0x80000000
+
+If the device has VIRTIO_BLK_F_BARRIER
+feature the high bit (VIRTIO_BLK_T_BARRIER) indicates that this
+request acts as a barrier and that all preceeding requests must be
+complete before this one, and all following requests must not be
+started until this is complete. Note that a barrier does not flush
+caches in the underlying backend device in host, and thus does not
+serve as data consistency guarantee. Driver must use FLUSH request to
+flush the host cache.
 
 
 2.4.3. Console Device
