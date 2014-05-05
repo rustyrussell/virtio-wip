@@ -2934,7 +2934,7 @@ were needed.
 
 \subsection{Device configuration layout}\label{sec:Device Types / Network Device / Device configuration layout}
 
-Three configuration fields are currently defined. The \field{mac} address field
+Three driver-read-only configuration fields are currently defined. The \field{mac} address field
 always exists (though is only valid if VIRTIO_NET_F_MAC is set), and
 \field{status} only exists if VIRTIO_NET_F_STATUS is set. Two
 read-only bits (for the driver) are currently defined for the status field:
@@ -3339,12 +3339,9 @@ contains multicast addresses.
 
 The VIRTIO_NET_CTRL_MAC_ADDR_SET command is used to set the
 default MAC address which rx filtering
-accepts.
+accepts (and if VIRTIO_NET_F_MAC_ADDR has been negotiated,
+this will be reflected in \field{mac} in config space).
 
-Depending on whether VIRTIO_NET_F_MAC_ADDR has been negotiated,
-\field{mac} in config space or the VIRTIO_NET_CTRL_MAC_ADDR_SET
-is used to set the default MAC address which rx filtering
-accepts.
 The command-specific-data for VIRTIO_NET_CTRL_MAC_ADDR_SET is
 the 6-byte MAC address.
 
@@ -3364,15 +3361,6 @@ matches neither the \field{mac} (or that set with VIRTIO_NET_CTRL_MAC_ADDR_SET)
 nor the MAC filtering table.
 
 \drivernormative{\subparagraph}{Setting MAC Address Filtering}{Device Types / Network Device / Device Operation / Control Virtqueue / Setting MAC Address Filtering}
-
-A driver MUST NOT write to the \field{mac} if VIRTIO_NET_F_MAC_ADDR is
-negotiated.
-
-The
-VIRTIO_NET_CTRL_MAC_ADDR_SET command is atomic whereas
-\field{mac} in config space is not, therefore drivers
-MUST negotiate VIRTIO_NET_F_MAC_ADDR if they change
-mac address when device is accepting incoming packets.
 
 The driver MUST follow the VIRTIO_NET_CTRL_MAC_TABLE_SET command
 by a le32 number, followed by that number of non-multicast
