@@ -5002,6 +5002,197 @@ descriptor for the \field{sense_len}, \field{residual},
 \field{status_qualifier}, \field{status}, \field{response} and
 \field{sense} fields.
 
+\section{Memory Balloon Device}\label{sec:Device Types / Memory Balloon Device}
+
+The virtio memory balloon device allows the guest to voluntarily
+return memory to the host.  The device can also be used to communicate
+guest memory statistics to the host.
+
+\subsection{Device ID}\label{sec:Device Types / Memory Balloon Device / Device ID}
+  13
+
+\subsection{Virtqueues}\label{sec:Device Types / Memory Balloon Device / Virtqueues}
+\begin{description}
+\item[0] fromdevq
+\item[1] todevq
+\end{description}
+
+\subsection{Feature bits}\label{sec:Device Types / Memory Balloon Device / Feature bits}
+\begin{description}
+\item[VIRTIO_MEMBALLOON_F_EXTRA_MEM (0)] Indicates that the balloon can go negative, adding net memory to the system.
+\item[VIRTIO_MEMBALLOON_F_4K (1)] Indicates the balloon accepts 4K pages
+\item[VIRTIO_MEMBALLOON_F_8K (2)] Indicates the balloon accepts 8K pages
+\item[VIRTIO_MEMBALLOON_F_16K (3)] Indicates the balloon accepts 16K pages
+\item[VIRTIO_MEMBALLOON_F_32K (4)] Indicates the balloon accepts 32K pages
+\item[VIRTIO_MEMBALLOON_F_64K (5)] Indicates the balloon accepts 64K pages
+\item[VIRTIO_MEMBALLOON_F_128K (6)] Indicates the balloon accepts 128K pages
+\item[VIRTIO_MEMBALLOON_F_256K (7)] Indicates the balloon accepts 256K pages
+\item[VIRTIO_MEMBALLOON_F_512K (8)] Indicates the balloon accepts 512K pages
+\item[VIRTIO_MEMBALLOON_F_1M (9)] Indicates the balloon accepts 1M pages
+\item[VIRTIO_MEMBALLOON_F_2M (10)] Indicates the balloon accepts 2M pages
+\item[VIRTIO_MEMBALLOON_F_4M (11)] Indicates the balloon accepts 4M pages
+\item[VIRTIO_MEMBALLOON_F_8M (12)] Indicates the balloon accepts 8M pages
+\item[VIRTIO_MEMBALLOON_F_16M (13)] Indicates the balloon accepts 16M pages
+\item[VIRTIO_MEMBALLOON_F_32M (14)] Indicates the balloon accepts 32M pages
+\item[VIRTIO_MEMBALLOON_F_64M (15)] Indicates the balloon accepts 64M pages
+\item[VIRTIO_MEMBALLOON_F_128M (16)] Indicates the balloon accepts 128M pages
+\item[VIRTIO_MEMBALLOON_F_256M (17)] Indicates the balloon accepts 256M pages
+\item[VIRTIO_MEMBALLOON_F_512M (18)] Indicates the balloon accepts 512M pages
+\item[VIRTIO_MEMBALLOON_F_1G (19)] Indicates the balloon accepts 1G pages
+\item[VIRTIO_MEMBALLOON_F_2G (20)] Indicates the balloon accepts 2G pages
+\item[VIRTIO_MEMBALLOON_F_4G (21)] Indicates the balloon accepts 4G pages
+\item[VIRTIO_MEMBALLOON_F_8G (22)] Indicates the balloon accepts 8G pages
+\item[VIRTIO_MEMBALLOON_F_16G (23)] Indicates the balloon accepts 16G pages
+\end{description}
+
+\devicenormative{\subsubsection}{Feature Bits}{Device Types / Memory Balloon Device / Feature Bits}
+
+The device MUST offer at least one of the page size features (4k to 16G pages).
+
+\drivernormative{\subsubsection}{Feature Bits}{Device Types / Memory Balloon Device / Feature Bits}
+
+The driver MUST negotiate only one of the page size features (4k to
+16G pages).  If it cannot negotiate any page size feature, the driver
+MUST not set FEATURES_OK, and it MAY set the FAILED status bit.
+
+\subsection{Device configuration layout}\label{sec:Device Types / Memory Balloon Device / Device configuration layout}
+
+None.
+
+\subsection{Device Initialization}\label{sec:Device Types / Memory Balloon Device / Device Initialization}
+
+\begin{enumerate}
+\item The driver negotiates a page size feature as part of normal
+  feature negotiation.
+
+\item The fromdevq and todevq virtqueues are identified.
+
+\item The driver adds one empty buffer of at least 16 bytes to the
+  fromdevq virtqueue and notifies the device.
+\end{enumerate}
+
+\subsection{Device Operation}\label{sec:Device Types / Memory Balloon Device / Device Operation}
+
+The memory balloon starts empty, and the driver adds and removes pages
+by entering VIRTIO_MEMBALLOON_GCMD_GIVE_PAGES and
+VIRTIO_MEMBALLOON_GCMD_GET_PAGES commands respectively into the
+todevq.  It can also exchange pages (useful for guest memory
+compaction, for example) using VIRTIO_MEMBALLOON_GCMD_EXCHANGE_PAGES.
+
+The driver chooses when to add or remove pages based on unspecified
+internal heuristics, which can be overridden by the
+VIRTIO_MEMBALLOON_HCMD_MIN_BALLOON command from the driver via the
+fromdevq.
+
+The driver tracks which pages are in the balloon, so it can ask for
+them back, and so it knows the balloon size for handling
+VIRTIO_MEMBALLOON_HCMD_MIN_BALLOON.
+
+\begin{description}
+\item[VIRTIO_MEMBALLOON_GCMD_GET_PAGES (0)] Get one or more pages out of the balloon (todevq).
+\item[VIRTIO_MEMBALLOON_GCMD_GIVE_PAGES (1)] Put one or more pages into the balloon (todevq).
+\item[VIRTIO_MEMBALLOON_GCMD_EXCHANGE_PAGES (2)] Swap one or more pages with the balloon (todevq).
+\item[VIRTIO_MEMBALLOON_HCMD_MIN_BALLOON (32768)] Set a recommended minimum ballon size (fromdevq).
+\end{description}
+
+\subsubsection{Giving Pages To The Balloon}\label{sec:Device Types / Memory Balloon Device / Device Operation / Giving Pages To The Balloon}
+
+Pages are given to the balloon using the VIRTIO_MEMBALLOON_GCMD_GIVE_PAGES command:
+
+\begin{enumerate}
+\item The driver contructs a buffer of le64 values.  The first is
+  device-readable VIRTIO_MEMBALLOON_GCMD_GIVE_PAGES, followed by one
+  or more device-readable 64-bit page addresses of pages it doesn't need.
+\item The driver places the buffer into the todevq and notifies the device.
+\end{enumerate}
+
+\subsubsection{Giving Pages To The Balloon}\label{sec:Device Types / Memory Balloon Device / Device Operation / Taking Pages From The Balloon}
+
+Pages are taken from the balloon using the
+VIRTIO_MEMBALLOON_GCMD_GET_PAGES command (and if
+VIRTIO_MEMBALLOON_F_EXTRA_MEM is negotiated, the driver can take pages
+it didn't put in).
+
+\begin{enumerate}
+\item The driver contructs a buffer of le64 values.  The first is
+  device-readable VIRTIO_MEMBALLOON_GCMD_GET_PAGES, followed by one
+  or more device-readable 64-bit page addresses of pages it wants,
+  followed by a final device-writabe 64-bit value.
+\item The driver places the buffer into the todevq and notifies the device.
+\item When the device has finished with the buffer, the final 64-bit value
+  indicates the number of pages which were successfully obtained.
+\end{enumerate}
+
+\subsubsection{Exchanging Pages With The Balloon}\label{sec:Device Types / Memory Balloon Device / Device Operation / Exchanging Pages With The Balloon}
+
+Since VIRTIO_MEMBALLOON_GCMD_GET_PAGES can fail, we provide an explicit
+zero-sum exhange operation which can't:
+
+\begin{enumerate}
+\item The driver contructs a buffer of le64 values.  The first is
+  device-readable VIRTIO_MEMBALLOON_GCMD_EXCHANGE_PAGES, followed by one
+  or more device-readable 64-bit page addresses of pages it wants,
+  followed by the same number of device-readable 64-bit page addresses of pages
+  to enter into the balloon.
+\item The driver places the buffer into the todevq and notifies the device.
+\end{enumerate}
+
+\subsubsection{Providing a Minimum Balloon Size}\label{sec:Device Types / Memory Balloon Device / Device Operation / Providing a Minimum Balloon Size}
+
+The driver is normally left to its discretion as to how many pages to
+give to the balloon, but it may be useful for the device to suggest a
+minumum, perhaps in response to system-wide memory pressure.  While it
+can't take away pages without the driver's cooperation, it could
+degrade performance (eg. by swapping pages to disk) if a driver
+doesn't give up the requested pages.
+
+\begin{enumerate}
+\item The driver contructs a buffer of two device-writable le64 values,
+  places it in the fromdevq queue and notifies the device.
+\item When (if) it wishes to set the minimum, the device fills the
+  first value with VIRTIO_MEMBALLOON_HCMD_MIN_BALLOON, and the
+  second with a (signed) number of bytes which is the new minimum and
+  sends an interrupt to the driver.
+\item The driver refills the buffer for the next notification.
+\item If the balloon is below the minimum, the driver adds pages to
+  the balloon.
+
+\end{enumerate}
+
+\devicenormative{\subsubsection}{Device Operation}{Device Types / Memory Balloon Device / Device Operation}
+
+The device MUST have no pages in the balloon after reset.
+
+The device MUST write the number of pages it has given in the final field
+of the VIRTIO_MEMBALLOON_GCMD_GET_PAGES buffer.  This number MAY be 0.
+
+The device MUST NOT use a negative value for the MEMBALLOON_HCMD_MIN_BALLOON
+command unless VIRTIO_MEMBALLOON_F_EXTRA_MEM was negotiated.
+
+\drivernormative{\subsubsection}{Device Operation}{Device Types / Memory Balloon Device / Device Operation}
+
+The driver SHOULD give pages to the balloon when it has excess pages
+whose loss will have minimal effect on system performance.
+
+The driver SHOULD give pages to the balloon when the balloon is
+below the minimum specified by VIRTIO_MEMBALLOON_HCMD_MIN_BALLOON
+
+The driver MUST specify one or more pages in
+VIRTIO_MEMBALLOON_GCMD_GIVE_PAGES and VIRTIO_MEMBALLOON_GCMD_GET_PAGES
+commands, and one or more pair of pages in the
+VIRTIO_MEMBALLOON_GCMD_EXCHANGE_PAGES command.
+
+The driver MUST NOT access pages which have been given to the balloon.
+
+The driver MUST NOT give pages to the balloon twice.
+
+The driver MUST NOT use ask for pages which are already available to
+it outside the balloon.
+
+If VIRTIO_MEMBALLOON_F_EXTRA_MEM is negotiated, the driver MAY ask the
+balloon for pages outside its current memory.  Otherwise the driver
+MUST NOT ask for pages which it did not place into the balloon.
+
 \chapter{Reserved Feature Bits}\label{sec:Reserved Feature Bits}
 
 Currently there are three device-independent feature bits defined:
